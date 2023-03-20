@@ -8,7 +8,8 @@ Performs some simple caching on the normalized request.
 
 ### REST Interpretation
 
-The layer also provides a simple interpretation of REST calls to the API servers. For example, you can use a simple call such as
+The layer also provides a simple interpretation of REST calls to the API servers. For example, you can use a simple call such as:
+
 ```http://anyx.io/v1/database_api/get_dynamic_global_properties```
 
 Methods with arguments are flattened, e.g.:
