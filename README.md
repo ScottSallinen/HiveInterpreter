@@ -21,6 +21,13 @@ Can be instead used as:
 ```
 http://anyx.io/v1/block_api/get_block?block_num=60000000
 ```
+
+API calls with multiple parameters are parsed in standard RESTful formatting, e.g.:
+```
+curl -s --data '{"jsonrpc":"2.0", "method":"account_history_api.enum_virtual_ops", "params":{"block_range_begin":1,"block_range_end":2,"include_reversible":true}, "id":1}' https://anyx.io
+->
+http://anyx.io/v1/account_history_api/enum_virtual_ops?block_range_begin=1&block_range_end=2&include_reversible=true
+```
 And so on.
 
 A few extension APIs are provided from this interface, such as `get_block_by_time`.
