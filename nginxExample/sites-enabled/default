@@ -1,0 +1,75 @@
+proxy_cache_path /ramdisk/nginx/core   keys_zone=steem:1000m  levels=1:2 inactive=60s max_size=1000m use_temp_path=off;
+proxy_cache_path /ramdisk/nginx/rest   keys_zone=rest:1000m   levels=1:2 inactive=60s max_size=1000m use_temp_path=off;
+
+limit_req_zone $binary_remote_addr zone=perip:50m rate=50r/s;
+limit_req_zone $binary_remote_addr zone=limited:50m rate=1r/s;
+
+
+upstream hiveinterpreter {
+  server unix:/dev/shm/hiveinterpreter.sock fail_timeout=0 max_fails=5;
+  keepalive 64;
+}
+
+log_format rt_rq '[$time_local] [$request_time ($upstream_response_time) ms] $status $upstream_cache_status: $remote_addr $host ($http_referer) | $request | "$request_body"';
+
+map $http_upgrade $type {
+  default "web";
+  websocket "ws";
+}
+
+server {
+  listen 80;
+  listen 443 ssl;
+  #server_name myserver.com;
+  root /var/www/html/;
+
+  access_log /var/log/nginx/rq.log rt_rq;
+  access_log /var/log/nginx/access.log combined;
+
+  limit_req zone=perip burst=10 nodelay;
+  limit_req_status 429;
+
+  keepalive_timeout 180;
+  keepalive_requests 100000;
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+
+  if ( $request_method !~ ^(GET|POST)$ ) {
+    return 405;
+    break;
+  }
+
+  error_page 405 =200 @error405;
+  location @error405 {
+    include /etc/nginx/proxy_headers.conf;
+    allow all;
+    return 200;
+  }
+
+  location ~ /.well-known {
+    allow all;
+  }
+
+  location /stub_status {
+    access_log off;
+    stub_status;
+    allow 127.0.0.1;
+    deny all;
+  }
+
+  location / {
+    try_files /nonexistent @$type;
+  }
+
+  location @web {
+    include /etc/nginx/proxy_headers.conf;
+
+    proxy_cache steem;
+    include /etc/nginx/proxy_cache.conf;
+    proxy_pass http://hiveinterpreter;
+  }
+
+  # ssl_certificate # managed by Certbot
+  # ssl_certificate_key  # managed by Certbot
+}

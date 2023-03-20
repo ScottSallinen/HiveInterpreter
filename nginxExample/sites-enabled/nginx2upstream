@@ -1,0 +1,104 @@
+proxy_cache_path /dev/shm/nginx/upstreamCache keys_zone=upstreamCache:1000m levels=1:2 inactive=60s max_size=1000m use_temp_path=off;
+
+upstream nginxToLite {
+  server unix:/dev/shm/hived.sock fail_timeout=0 max_fails=256;
+  keepalive 64;
+}
+
+upstream nginxToFull {
+  server 127.0.0.1:8080 fail_timeout=0 max_fails=256;
+  keepalive 64;
+}
+
+upstream nginxToHivemind {
+  server 127.0.0.1:9080 fail_timeout=0 max_fails=256;
+}
+
+server {
+  listen unix:/dev/shm/nginxToLite.sock;
+  server_name nginxToLite;
+  root /var/www/html/;
+  access_log off;
+
+  keepalive_timeout 180;
+  keepalive_requests 100000;
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+
+  allow unix:;
+  deny all;
+
+  location / {
+    access_log  /var/log/nginx/nginxToLite.log rt_rq;
+    include /etc/nginx/proxy_headers.conf;
+    proxy_cache upstreamCache;
+    include /etc/nginx/proxy_cache.conf;
+    proxy_pass http://nginxToLite;
+  }
+}
+
+server {
+  listen unix:/dev/shm/nginxToFull.sock;
+  server_name nginxToFull;
+  root /var/www/html/;
+  access_log off;
+
+  keepalive_timeout 180;
+  keepalive_requests 100000;
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+
+  allow unix:;
+  allow 127.0.0.1;
+  deny all;
+
+  location / {
+    access_log  /var/log/nginx/nginxToFull.log rt_rq;
+    include /etc/nginx/proxy_headers.conf;
+    proxy_cache upstreamCache;
+    include /etc/nginx/proxy_cache.conf;
+    proxy_pass http://nginxToFull;
+  }
+}
+
+server {
+  listen unix:/dev/shm/nginxToHivemind.sock;
+  server_name nginxToHivemind;
+  root /var/www/html/;
+
+  access_log  /var/log/nginx/nginxToHivemind.log rt_rq;
+  #access_log off;
+
+  if ( $request_method !~ ^(GET|POST)$ ) {
+    return 405;
+    break;
+  }
+
+  error_page 405 =200 @error405;
+  location @error405 {
+    include /etc/nginx/proxy_headers.conf;
+    allow all;
+    return 200;
+  }
+
+  location ~ /.well-known {
+    allow all;
+  }
+
+  location /stub_status {
+    stub_status;
+    allow 127.0.0.1;
+    deny all;
+  }
+
+  allow unix:;
+  allow 127.0.0.1;
+  deny all;
+
+  location / {
+    include /etc/nginx/proxy_headers.conf;
+    proxy_pass http://nginxToHivemind;
+  }
+}
