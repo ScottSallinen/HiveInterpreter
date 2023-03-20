@@ -9,8 +9,9 @@ Performs some simple caching on the normalized request.
 ### REST Interpretation
 
 The layer also provides a simple interpretation of REST calls to the API servers. For example, you can use a simple call such as:
-
-```http://anyx.io/v1/database_api/get_dynamic_global_properties```
+```
+http://anyx.io/v1/database_api/get_dynamic_global_properties
+```
 
 Methods with arguments are flattened, e.g.:
 ```
@@ -23,7 +24,9 @@ http://anyx.io/v1/block_api/get_block?block_num=60000000
 And so on.
 
 A few extension APIs are provided from this interface, such as `get_block_by_time`.
-```http://anyx.io/v1/block_api/get_block_by_time?timestamp=2021-12-13T11:30:36```
+```
+http://anyx.io/v1/block_api/get_block_by_time?timestamp=2021-12-13T11:30:36
+```
 
 ### Install
 Install go. Suggested method:
