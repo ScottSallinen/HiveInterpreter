@@ -5,6 +5,25 @@ Takes incoming requests, determines whether they need history or hivemind, and d
 This does not perform methods like load balancing, this is handled by nginx after the incoming request has been normalized.
 Performs some simple caching on the normalized request.
 
+
+### REST Interpretation
+
+The layer also provides a simple interpretation of REST calls to the API servers. For example, you can use a simple call such as
+```http://anyx.io/v1/database_api/get_dynamic_global_properties```
+
+Methods with arguments are flattened, e.g.:
+```
+curl -s -d '{"jsonrpc":"2.0", "method":"block_api.get_block", "params":{"block_num":60000000}, "id":"0"}' https://anyx.io
+```
+Can be instead used as:
+```
+http://anyx.io/v1/block_api/get_block?block_num=60000000
+```
+And so on.
+
+A few extension APIs are provided from this interface, such as `get_block_by_time`.
+```http://anyx.io/v1/block_api/get_block_by_time?timestamp=2021-12-13T11:30:36```
+
 ### Install
 Install go. Suggested method:
 ```
