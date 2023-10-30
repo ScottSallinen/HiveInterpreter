@@ -71,6 +71,7 @@ var abliteAPIs = map[string]bool{
 	"account_by_key_api":     true,
 	"market_history_api":     true,
 	"transaction_status_api": true,
+	"wallet_bridge_api":      true,
 }
 
 // Appbase APIs that are handled by hivemind.
